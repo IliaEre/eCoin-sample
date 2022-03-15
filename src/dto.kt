@@ -1,7 +1,8 @@
 
-@Serializable
+//@Serializable
 data class User(
-    val name: String,
+    val username: String,
     val timeStamp: Long,
-    val publicKey: String
+    val publicKey: String,
+    val balance: Long
 )

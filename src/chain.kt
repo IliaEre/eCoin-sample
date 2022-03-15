@@ -10,6 +10,7 @@ object Chain {
     private const val DIFFICULTY = 5
     private val validPrefix = "0".repeat(DIFFICULTY)
 
+    // todo
     var UTXO: MutableMap<String, TransactionOutput> = mutableMapOf()
 
     /**

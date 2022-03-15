@@ -5,12 +5,14 @@ import java.util.*
 
 object BlockUtils {
 
+    private const val DEFAULT_SIGNATURE_NUM = 1
+    private const val DEFAULT_ALGORITHM = "SHA-256"
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    fun String.hash(algorithm: String = "SHA-256"): String {
+    fun String.hash(algorithm: String = DEFAULT_ALGORITHM): String {
         val messageDigest = MessageDigest.getInstance(algorithm)
         messageDigest.update(this.toByteArray())
-        return String.format("%064x", BigInteger(1, messageDigest.digest()))
+        return String.format("%064x", BigInteger(DEFAULT_SIGNATURE_NUM, messageDigest.digest()))
     }
 
     /**
@@ -38,9 +40,7 @@ object BlockUtils {
 }
 
 object RsaUtils {
-
     private const val ALGORITHM: String = "SHA256withRSA"
-
     private fun rsaInstance(algorithm: String = ALGORITHM): Signature = Signature.getInstance(algorithm)
 
     fun String.sign(privateKey: PrivateKey) : ByteArray {

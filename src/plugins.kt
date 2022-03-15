@@ -7,6 +7,10 @@ import io.ktor.jackson.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import io.ktor.util.pipeline.*
+
+suspend fun PipelineContext<*, ApplicationCall>.getParam(param: String) =
+    this.call.receiveParameters()[param] ?: error("$param not found!")
 
 /**
  * Main plugins
@@ -24,8 +28,17 @@ fun Application.plugins() {
 /**
  * Chain routing
  * */
-fun Application.serviceRouting() {
+fun Application.chainRouting() {
     routing {
+        route("/wallet") {
+            get("/balance") {
+                val username = getParam("username")
+                MongoClient.findUserByUsername(username)
+                    ?.let { call.respond(it.balance) }
+                    ?: call.respond(HttpStatusCode.BadRequest, "User not found!")
+            }
+        }
+
         get("/chain") { call.respond(Chain.getChain()) }
 
         post("/chain") {
