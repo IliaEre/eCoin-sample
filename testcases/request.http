@@ -7,5 +7,5 @@ username: testUser
 
 
 ###
-GET http://localhost:8080/wallet/balance/user1
+GET http://localhost:8080/wallet/balance/user2
 Content-Type: application/json

@@ -1,4 +1,3 @@
-import BlockUtils.calculateHash
 import BlockUtils.isMined
 import BlockUtils.isValid
 import org.slf4j.Logger
