@@ -13,15 +13,17 @@ object BlockUtils {
         return String.format("%064x", BigInteger(DEFAULT_SIGNATURE_NUM, messageDigest.digest()))
     }
 
-    /**
-     * Class block has the same method by init, but here we should use it again for validation reason
-     * */
-    fun Block.calculateHash(): String = "$index$transactions$timestamp$record$previousHash$nonce".hash()
+    /** Class block has the same method by init, but here we should use it again for validation reason */
+    fun Block.calculateHash(): String = "$index$transactions$timestamp$blockRecord$previousHash$nonce".hash()
 
-    /**
-     * Check the block was mined by prefix
-     * */
+    /** Check the block was mined by prefix */
     fun Block.isMined(prefix: String): Boolean = this.hash.startsWith(prefix)
+
+    fun Block.isValid(oldBlock: Block): Boolean = when {
+        (oldBlock.index + 1 != this.index) || (oldBlock.hash != this.previousHash)
+                || (this.calculateHash() != this.hash) -> false
+        else -> true
+    }
 }
 
 object RsaUtils {

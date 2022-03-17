@@ -1,25 +1,29 @@
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import repo.WalletRepository
 
-object PreparingFactory {
+class Bootstrap {
 
-    val mainWallet = Wallet.create(Chain)
+    private val logger: Logger = LoggerFactory.getLogger(Bootstrap::class.java)
 
-    fun initFirstChain() {
-        logger.info("init first block...")
-        val firstRecord = Record(1.0, 1L)
+    fun bootstrap() {
+        val amount = 1_000_000_000L
+
+        logger.info("init chain...")
+        val blockRecord = BlockRecord("admin", 0, "", "", amount)
+
+        logger.info("init admin wallet")
+        val mainWallet = WalletRepository.create("user1")
 
         logger.info("init first TX...")
-        val tx = Transaction.create(sender = mainWallet.publicKey, recipient = mainWallet.publicKey, amount = AMOUNT)
-        tx.outputs.add(TransactionOutput(recipient = mainWallet.publicKey, amount = 100, transactionHash = tx.hash))
+        val tx = Transaction.create(sender = mainWallet.publicKey, recipient = mainWallet.publicKey, amount = amount)
+        tx.outputs.add(TransactionOutput(recipient = mainWallet.publicKey, amount = amount, transactionHash = tx.hash))
         tx.sign(mainWallet.privateKey)
 
-        logger.info("add new block to chain...")
-        Chain.addFirstBlock(firstRecord, tx)
+        Chain.addGenesisBlock(blockRecord, tx)
 
-        logger.info("main block was added successfully.")
+        logger.info("init was finished... size:${Chain.getChain().size}")
+        logger.info("admin balance: ${mainWallet.balance}")
     }
 
-    private val logger: Logger = LoggerFactory.getLogger(this::class.java)
-    private const val AMOUNT = 1_000_000
 }

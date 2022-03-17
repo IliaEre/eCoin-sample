@@ -11,29 +11,25 @@ import java.security.PublicKey
 /**
  * Custom data
  * */
-data class Record(val weight: Double, val date: Long)
+data class BlockRecord(
+    val platformName: String,
+    val date: Long,
+    val from: String,
+    val to: String,
+    val sum: Long
+)
 
-/**
- * Main block
- *
- * @param index block index
- * @param timestamp creating timestamp
- * @param record custom record
- * @param previousHash previous block hash
- * @param nonce uniq value for mining block
- * */
 data class Block(
     val index: Int = 0,
     val transactions: MutableList<Transaction> = mutableListOf(),
     val timestamp: Long = Instant.now().toEpochMilli(),
-    val record: Record,
+    val blockRecord: BlockRecord,
     val previousHash: String,
-    val nonce: Long = 0,
-
+    val nonce: Long = 0
 ) {
     val hash: String = this.calculateHash()
 
-    fun addTransaction(transaction: Transaction) : Block {
+    fun addTransaction(transaction: Transaction): Block {
         if (transaction.isSignatureValid())
             transactions.add(transaction)
         return this
@@ -46,24 +42,23 @@ data class Block(
 data class Wallet(val publicKey: PublicKey, val privateKey: PrivateKey, val blockChain: Chain) {
 
     companion object {
-        fun create(blockChain: Chain): Wallet {
-            val generator = KeyPairGenerator.getInstance("RSA")
-            generator.initialize(2048)
-            val keyPair = generator.generateKeyPair()
+        fun create(blockChain: Chain): Wallet =
+            KeyPairGenerator.getInstance("RSA")
+                .also { it.initialize(2048) }
+                .generateKeyPair()
+                .let { keyPair -> Wallet(keyPair.public, keyPair.private, blockChain) }
+    }
 
-            return Wallet(keyPair.public, keyPair.private, blockChain)
+    val balance: Long
+        get() {
+            return getMyTransactions().sumOf { it.amount }
         }
-    }
 
-    val balance: Int get() {
-        return getMyTransactions().sumBy { it.amount }
-    }
-
-    private fun getMyTransactions() : Collection<TransactionOutput> {
+    private fun getMyTransactions(): Collection<TransactionOutput> {
         return blockChain.UTXO.filterValues { it.isMine(publicKey) }.values
     }
 
-    fun sendFundsTo(recipient: PublicKey, amountToSend: Int) : Transaction {
+    fun sendFundsTo(recipient: PublicKey, amountToSend: Long): Transaction {
 
         if (amountToSend > balance) {
             throw IllegalArgumentException("Insufficient funds")
@@ -72,7 +67,7 @@ data class Wallet(val publicKey: PublicKey, val privateKey: PrivateKey, val bloc
         val tx = Transaction.create(sender = publicKey, recipient = publicKey, amount = amountToSend)
         tx.outputs.add(TransactionOutput(recipient = recipient, amount = amountToSend, transactionHash = tx.hash))
 
-        var collectedAmount = 0
+        var collectedAmount = 0L
         for (myTx in getMyTransactions()) {
             collectedAmount += myTx.amount
             tx.inputs.add(myTx)
@@ -92,7 +87,7 @@ data class Wallet(val publicKey: PublicKey, val privateKey: PrivateKey, val bloc
 
 data class TransactionOutput(
     val recipient: PublicKey,
-    val amount: Int,
+    val amount: Long,
     val transactionHash: String,
     var hash: String = ""
 ) {
@@ -101,23 +96,23 @@ data class TransactionOutput(
         hash = "${recipient.encodeToString()}$amount$transactionHash".hash()
     }
 
-    fun isMine(me: PublicKey) : Boolean = recipient == me
+    fun isMine(me: PublicKey): Boolean = recipient == me
 }
 
 data class Transaction(
     val sender: PublicKey,
     val recipient: PublicKey,
-    val amount: Int,
+    val amount: Long,
     val inputs: MutableList<TransactionOutput> = mutableListOf(),
     val outputs: MutableList<TransactionOutput> = mutableListOf()
 ) {
 
     private var signature: ByteArray = ByteArray(0)
 
-    val hash: String =  "${sender.encodeToString()}${recipient.encodeToString()}$amount$salt".hash()
+    val hash: String = "${sender.encodeToString()}${recipient.encodeToString()}$amount$salt".hash()
 
     companion object {
-        fun create(sender: PublicKey, recipient: PublicKey, amount: Int) : Transaction =
+        fun create(sender: PublicKey, recipient: PublicKey, amount: Long): Transaction =
             Transaction(sender, recipient, amount)
 
         var salt: Long = 0
@@ -127,12 +122,12 @@ data class Transaction(
             }
     }
 
-    fun sign(privateKey: PrivateKey) : Transaction {
+    fun sign(privateKey: PrivateKey): Transaction {
         signature = "${sender.encodeToString()}${recipient.encodeToString()}$amount".sign(privateKey)
         return this
     }
 
-    fun isSignatureValid() : Boolean {
+    fun isSignatureValid(): Boolean {
         return "${sender.encodeToString()}${recipient.encodeToString()}$amount".verifySignature(sender, signature)
     }
 

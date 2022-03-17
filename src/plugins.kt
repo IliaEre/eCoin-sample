@@ -7,8 +7,8 @@ import io.ktor.jackson.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
-import io.ktor.util.pipeline.*
 import ktor.getParam
+import repo.WalletRepository
 
 /** Main plugins */
 fun Application.plugins() {
@@ -21,42 +21,42 @@ fun Application.plugins() {
     }
 }
 
+/** Health check */
+fun Application.stateRouting() {
+    routing { get("/healthCheck") { call.respond(mapOf("status" to "ok")) } }
+}
+
 /** Chain routing */
 fun Application.chainRouting() {
     routing {
         route("/wallet") {
-            get("/balance") {
+            get("/balance/{username}") {
                 val username = getParam("username")
-                MongoClient.findUserByUsername(username)
-                    ?.let { call.respond(it.balance) }
-                    ?: call.respond(HttpStatusCode.BadRequest, "User not found!")
+                val balance = WalletRepository.findByUserName(username).balance
+                call.respond(balance)
             }
 
             post("/transfer") {
-                val record = call.receive<Record>()
+                val username = call.request.headers["username"]
+                require(username.isNullOrEmpty().not()) {
+                    throw IllegalStateException("username must be not null.")
+                }
 
-                // todo: move to db
-                val wallet1 = PreparingFactory.mainWallet
-                val wallet2 = Wallet.create(Chain)
+                val blockRecord = call.receive<BlockRecord>()
+                val w1 = WalletRepository.findByUserName(blockRecord.from)
+                val w2 = WalletRepository.findByUserName(blockRecord.to)
+
+                val tx2 = w1.sendFundsTo(recipient = w2.publicKey, amountToSend = blockRecord.sum)
+                Chain.add(blockRecord, tx2)
 
                 log.info("Chain:${Chain.getChain()}")
-                log.info("Wallet1 balance: ${wallet1.balance}")
-                log.info("Wallet2 balance: ${wallet2.balance}")
+                log.info("Wallet1 balance: ${w1.balance}")
+                log.info("Wallet2 balance: ${w2.balance}")
 
-                val tx2 = wallet1.sendFundsTo(recipient = wallet2.publicKey, amountToSend = 33)
-                Chain.add(record, tx2)
-
-                log.info("Chain:${Chain.getChain()}")
-                log.info("Wallet1 balance: ${wallet1.balance}")
-                log.info("Wallet2 balance: ${wallet2.balance}")
+                call.respond(HttpStatusCode.OK, mapOf("status" to "ok"))
             }
         }
 
         get("/chain") { call.respond(Chain.getChain()) }
     }
-}
-
-/** Health check */
-fun Application.stateRouting() {
-    routing { get("/healthCheck") { call.respond(mapOf("status" to "ok")) } }
 }

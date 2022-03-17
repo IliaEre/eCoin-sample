@@ -6,9 +6,8 @@ object MongoClient {
 
     private const val DATABASE = "wallets"
     private val client = KMongo.createClient().coroutine
-    private val database = client.getDatabase(DATABASE)
+    private val db = client.getDatabase(DATABASE)
 
-    suspend fun findUserByUsername(username: String) =
-        database.getCollection<User>().findOne(User::username eq username)
+    suspend fun findUserByUsername(username: String) = db.getCollection<User>().findOne(User::username eq username)
 
 }
