@@ -7,14 +7,13 @@ import kotlin.concurrent.withLock
 
 object Chain {
 
+    /** nonce */
     private const val DIFFICULTY = 2
     private val validPrefix = "0".repeat(DIFFICULTY)
-
     /** transactions */
     val UTXO: ConcurrentHashMap<String, TransactionOutput> = ConcurrentHashMap()
     /** Own chain list */
-    private val chain: CopyOnWriteArrayList<Block> = CopyOnWriteArrayList<Block>()
-
+    private val chain: CopyOnWriteArrayList<Block> = CopyOnWriteArrayList<Block>() // TODO: init first block!
     private val lock = ReentrantLock()
 
     /** Return copy of chain list */
@@ -72,7 +71,7 @@ object Chain {
         return true
     }
 
-    fun Block.mine(prefix: String): Block {
+    private fun Block.mine(prefix: String): Block {
         var block = this.copy()
         while (block.isMined(prefix).not()) {
             block = block.copy(nonce = block.nonce + 1)
