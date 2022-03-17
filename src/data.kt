@@ -1,3 +1,4 @@
+import BlockUtils.calculateHash
 import BlockUtils.hash
 import RsaUtils.encodeToString
 import RsaUtils.sign
@@ -30,7 +31,7 @@ data class Block(
     val nonce: Long = 0,
 
 ) {
-    val hash: String = "$index$transactions$timestamp$record$previousHash$nonce".hash()
+    val hash: String = this.calculateHash()
 
     fun addTransaction(transaction: Transaction) : Block {
         if (transaction.isSignatureValid())
@@ -61,6 +62,32 @@ data class Wallet(val publicKey: PublicKey, val privateKey: PrivateKey, val bloc
     private fun getMyTransactions() : Collection<TransactionOutput> {
         return blockChain.UTXO.filterValues { it.isMine(publicKey) }.values
     }
+
+    fun sendFundsTo(recipient: PublicKey, amountToSend: Int) : Transaction {
+
+        if (amountToSend > balance) {
+            throw IllegalArgumentException("Insufficient funds")
+        }
+
+        val tx = Transaction.create(sender = publicKey, recipient = publicKey, amount = amountToSend)
+        tx.outputs.add(TransactionOutput(recipient = recipient, amount = amountToSend, transactionHash = tx.hash))
+
+        var collectedAmount = 0
+        for (myTx in getMyTransactions()) {
+            collectedAmount += myTx.amount
+            tx.inputs.add(myTx)
+
+            if (collectedAmount > amountToSend) {
+                val change = collectedAmount - amountToSend
+                tx.outputs.add(TransactionOutput(recipient = publicKey, amount = change, transactionHash = tx.hash))
+            }
+
+            if (collectedAmount >= amountToSend) {
+                break
+            }
+        }
+        return tx.sign(privateKey)
+    }
 }
 
 data class TransactionOutput(
@@ -81,19 +108,15 @@ data class Transaction(
     val sender: PublicKey,
     val recipient: PublicKey,
     val amount: Int,
-    var hash: String = "",
     val inputs: MutableList<TransactionOutput> = mutableListOf(),
     val outputs: MutableList<TransactionOutput> = mutableListOf()
 ) {
 
     private var signature: ByteArray = ByteArray(0)
 
-    init {
-        hash = "${sender.encodeToString()}${recipient.encodeToString()}$amount$salt".hash()
-    }
+    val hash: String =  "${sender.encodeToString()}${recipient.encodeToString()}$amount$salt".hash()
 
     companion object {
-
         fun create(sender: PublicKey, recipient: PublicKey, amount: Int) : Transaction =
             Transaction(sender, recipient, amount)
 

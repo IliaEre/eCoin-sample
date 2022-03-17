@@ -1,4 +1,3 @@
-import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.security.*
 import java.util.*
@@ -7,7 +6,6 @@ object BlockUtils {
 
     private const val DEFAULT_SIGNATURE_NUM = 1
     private const val DEFAULT_ALGORITHM = "SHA-256"
-    private val logger = LoggerFactory.getLogger(this::class.java)
 
     fun String.hash(algorithm: String = DEFAULT_ALGORITHM): String {
         val messageDigest = MessageDigest.getInstance(algorithm)
@@ -24,19 +22,6 @@ object BlockUtils {
      * Check the block was mined by prefix
      * */
     fun Block.isMined(prefix: String): Boolean = this.hash.startsWith(prefix)
-
-    fun Block.mine(prefix: String): Block {
-        logger.info("Mine block with index:${this.index}")
-
-        var block = this.copy()
-        while (block.isMined(prefix).not()) {
-            block = block.copy(nonce = block.nonce + 1)
-        }
-
-        logger.info("block was mined...")
-        return block
-    }
-
 }
 
 object RsaUtils {

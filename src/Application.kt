@@ -7,4 +7,6 @@ fun Application.module() {
     plugins()
     chainRouting()
     stateRouting()
+
+    PreparingFactory.initFirstChain()
 }

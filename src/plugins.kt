@@ -8,13 +8,9 @@ import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.util.pipeline.*
+import ktor.getParam
 
-suspend fun PipelineContext<*, ApplicationCall>.getParam(param: String) =
-    this.call.receiveParameters()[param] ?: error("$param not found!")
-
-/**
- * Main plugins
- * */
+/** Main plugins */
 fun Application.plugins() {
     install(CallLogging)
     install(ContentNegotiation) {
@@ -25,9 +21,7 @@ fun Application.plugins() {
     }
 }
 
-/**
- * Chain routing
- * */
+/** Chain routing */
 fun Application.chainRouting() {
     routing {
         route("/wallet") {
@@ -37,21 +31,32 @@ fun Application.chainRouting() {
                     ?.let { call.respond(it.balance) }
                     ?: call.respond(HttpStatusCode.BadRequest, "User not found!")
             }
+
+            post("/transfer") {
+                val record = call.receive<Record>()
+
+                // todo: move to db
+                val wallet1 = PreparingFactory.mainWallet
+                val wallet2 = Wallet.create(Chain)
+
+                log.info("Chain:${Chain.getChain()}")
+                log.info("Wallet1 balance: ${wallet1.balance}")
+                log.info("Wallet2 balance: ${wallet2.balance}")
+
+                val tx2 = wallet1.sendFundsTo(recipient = wallet2.publicKey, amountToSend = 33)
+                Chain.add(record, tx2)
+
+                log.info("Chain:${Chain.getChain()}")
+                log.info("Wallet1 balance: ${wallet1.balance}")
+                log.info("Wallet2 balance: ${wallet2.balance}")
+            }
         }
 
         get("/chain") { call.respond(Chain.getChain()) }
-
-        post("/chain") {
-            val record = call.receive<Record>()
-            Chain.add(record)
-            call.respond(HttpStatusCode.Created)
-        }
     }
 }
 
-/**
- * Health check
- * */
+/** Health check */
 fun Application.stateRouting() {
     routing { get("/healthCheck") { call.respond(mapOf("status" to "ok")) } }
 }

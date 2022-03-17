@@ -1,32 +1,23 @@
 import BlockUtils.calculateHash
 import BlockUtils.isMined
-import BlockUtils.mine
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 object Chain {
 
-    private const val DIFFICULTY = 5
+    private const val DIFFICULTY = 2
     private val validPrefix = "0".repeat(DIFFICULTY)
 
-    // todo
-    var UTXO: MutableMap<String, TransactionOutput> = mutableMapOf()
-
-    /**
-     * Own chain list
-     * */
+    /** transactions */
+    val UTXO: ConcurrentHashMap<String, TransactionOutput> = ConcurrentHashMap()
+    /** Own chain list */
     private val chain: CopyOnWriteArrayList<Block> = CopyOnWriteArrayList<Block>()
-
-    init {
-        chain.add(Block(index = 0, record = Record(weight = 0.0, date = 0L), previousHash = "", nonce = 0L))
-    }
 
     private val lock = ReentrantLock()
 
-    /**
-     * Return copy of chain list
-     * */
+    /** Return copy of chain list */
     fun getChain() = CopyOnWriteArrayList(chain)
 
     /**
@@ -36,8 +27,10 @@ object Chain {
      * 3. Add block to chain
      * 4. Validate again
      * */
-    fun add(record: Record) {
-        val block = generate(chain.last(), record)
+    fun add(record: Record, tx: Transaction) {
+        require(tx.isSignatureValid())
+        val block = generate(chain.last(), record, tx)
+
         require(block.isValid(chain.last())) { "Invalid Block!" }
 
         val minedBlock = if (block.isMined(validPrefix)) block else block.mine(validPrefix)
@@ -46,15 +39,23 @@ object Chain {
         require(isValid()) { "Invalid BlockChain!" }
     }
 
-    /**
-     * Generate new block
-     * */
-    private fun generate(block: Block, record: Record): Block =
-        Block(index = block.index + 1, record = record, previousHash = block.hash)
+    fun addFirstBlock(record: Record, tx: Transaction) {
+        require(tx.isSignatureValid())
 
-    /**
-     * Validate all elements on chain
-     * */
+        val block = generateFirstBlock(record, tx)
+        val minedBlock = if (block.isMined(validPrefix)) block else block.mine(validPrefix)
+        chain.add(minedBlock)
+        require(isValid()) { "Invalid BlockChain!" }
+    }
+
+    /** Generate new block */
+    private fun generate(block: Block, record: Record, tx: Transaction): Block =
+        Block(index = block.index + 1, record = record, previousHash = block.hash, transactions = mutableListOf(tx))
+
+    private fun generateFirstBlock(record: Record, tx: Transaction): Block =
+        Block(index = 0, record = record, previousHash = "", nonce = 0, transactions = mutableListOf(tx))
+
+    /** Validate all elements on chain */
     private fun isValid(): Boolean {
         if (chain.size == 1) { return true }
 
@@ -69,6 +70,18 @@ object Chain {
         }
 
         return true
+    }
+
+    fun Block.mine(prefix: String): Block {
+        var block = this.copy()
+        while (block.isMined(prefix).not()) {
+            block = block.copy(nonce = block.nonce + 1)
+        }
+
+        // updated transactions
+        updateUTXO(block)
+
+        return block
     }
 
     /**
