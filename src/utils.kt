@@ -2,6 +2,12 @@ import java.math.BigInteger
 import java.security.*
 import java.util.*
 
+object WalletUtils {
+
+    fun TransactionOutput.isMine(me: PublicKey): Boolean = recipient == me
+
+}
+
 object BlockUtils {
 
     private const val DEFAULT_SIGNATURE_NUM = 1
