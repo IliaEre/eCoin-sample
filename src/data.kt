@@ -3,15 +3,13 @@ import BlockUtils.hash
 import RsaUtils.encodeToString
 import RsaUtils.sign
 import RsaUtils.verifySignature
-import WalletUtils.isMine
-import java.time.Instant
+import WalletUtils.getTransactions
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.PublicKey
+import java.time.Instant
 
-/**
- * Custom data
- * */
+/** Custom data */
 data class BlockRecord(
     val platformName: String,
     val date: Long,
@@ -31,9 +29,7 @@ data class Block(
     val hash: String = this.calculateHash()
 }
 
-/**
- * Client wallet
- * */
+/** Client wallet */
 data class Wallet(val publicKey: PublicKey, val privateKey: PrivateKey, val blockChain: Chain) {
 
     companion object {
@@ -46,35 +42,8 @@ data class Wallet(val publicKey: PublicKey, val privateKey: PrivateKey, val bloc
 
     val balance: Long
         get() {
-            return getMyTransactions().sumOf { it.amount }
+            return this.getTransactions().sumOf { it.amount }
         }
-
-    private fun getMyTransactions(): Collection<TransactionOutput> =
-        blockChain.UTXO.filterValues { it.isMine(publicKey) }.values
-
-    fun sendFundsTo(recipient: PublicKey, amountToSend: Long): Transaction {
-        require(balance > amountToSend) { "Insufficient funds" }
-
-        val tx = Transaction.create(sender = publicKey, recipient = publicKey, amount = amountToSend)
-        tx.outputs.add(TransactionOutput(recipient = recipient, amount = amountToSend, transactionHash = tx.hash))
-
-        var collectedAmount = 0L
-
-        for (myTx in getMyTransactions()) {
-            collectedAmount += myTx.amount
-            tx.inputs.add(myTx)
-
-            if (collectedAmount > amountToSend) {
-                val change = collectedAmount - amountToSend
-                tx.outputs.add(TransactionOutput(recipient = publicKey, amount = change, transactionHash = tx.hash))
-            }
-
-            if (collectedAmount >= amountToSend) {
-                break
-            }
-        }
-        return tx.sign(privateKey)
-    }
 }
 
 data class TransactionOutput(

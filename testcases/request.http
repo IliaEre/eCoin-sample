@@ -3,7 +3,7 @@ POST http://localhost:8080/wallet/transfer
 Content-Type: application/json
 username: testUser
 
-{"platform_name":"platform","date":1535015447,"from":"user1","to":"user2","sum":33}
+{"platform_name":"platform","date":1535015447,"from":"user1","to":"user2","sum":999999999}
 
 
 ###

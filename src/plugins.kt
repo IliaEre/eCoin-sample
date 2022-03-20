@@ -1,3 +1,4 @@
+import WalletUtils.sendFundsTo
 import com.fasterxml.jackson.databind.PropertyNamingStrategy
 import com.fasterxml.jackson.databind.SerializationFeature
 import io.ktor.application.*

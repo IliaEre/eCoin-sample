@@ -6,7 +6,7 @@ class Bootstrap {
 
     private val logger: Logger = LoggerFactory.getLogger(Bootstrap::class.java)
 
-    fun bootstrap() {
+    fun load() {
         val amount = 1_000_000_000L
 
         logger.info("init chain...")

@@ -1,3 +1,4 @@
+import UT.getUTXO
 import java.math.BigInteger
 import java.security.*
 import java.util.*
@@ -5,6 +6,32 @@ import java.util.*
 object WalletUtils {
 
     fun TransactionOutput.isMine(me: PublicKey): Boolean = recipient == me
+
+    fun Wallet.getTransactions() = getUTXO().filterValues { it.isMine(publicKey) }.values
+
+    fun Wallet.sendFundsTo(recipient: PublicKey, amountToSend: Long): Transaction {
+        require(balance > amountToSend) { "Insufficient funds" }
+
+        val tx = Transaction.create(sender = publicKey, recipient = publicKey, amount = amountToSend)
+        tx.outputs.add(TransactionOutput(recipient = recipient, amount = amountToSend, transactionHash = tx.hash))
+
+        var collectedAmount = 0L
+
+        for (myTx in this.getTransactions()) {
+            collectedAmount += myTx.amount
+            tx.inputs.add(myTx)
+
+            if (collectedAmount > amountToSend) {
+                val change = collectedAmount - amountToSend
+                tx.outputs.add(TransactionOutput(recipient = publicKey, amount = change, transactionHash = tx.hash))
+            }
+
+            if (collectedAmount >= amountToSend) {
+                break
+            }
+        }
+        return tx.sign(privateKey)
+    }
 
 }
 
