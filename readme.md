@@ -2,7 +2,7 @@
 
 Kotlin, Ktor.
 
-# version 0.0.1-SNAPSHOT
+# version 0.0.2-SNAPSHOT
 
 --- 
 
@@ -13,7 +13,6 @@ Kotlin, Ktor.
 ```http request
 POST http://localhost:8080/wallet/transfer
 Content-Type: application/json
-username: testUser
 
 {"platform_name":"platform","date":1535015447,"from":"user1","to":"user2","sum":33}
 ```
