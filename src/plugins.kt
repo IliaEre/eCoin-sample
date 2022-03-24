@@ -1,3 +1,4 @@
+import WalletUtils.sendFundsTo
 import com.fasterxml.jackson.databind.PropertyNamingStrategy
 import com.fasterxml.jackson.databind.SerializationFeature
 import io.ktor.application.*
@@ -8,7 +9,6 @@ import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import ktor.getParam
-import repo.WalletRepository
 
 /** Main plugins */
 fun Application.plugins() {
@@ -30,24 +30,35 @@ fun Application.stateRouting() {
 fun Application.chainRouting() {
     routing {
         route("/wallet") {
+
+            post {
+                val record = call.receive<WalletCreateRequest>()
+                MongoClient.create(record)
+                call.respond(HttpStatusCode.Created)
+            }
+
             get("/balance/{username}") {
                 val username = getParam("username")
-                val balance = WalletRepository.findByUserName(username).balance
-                call.respond(balance)
+                MongoClient.findBalanceByUsername(username)
+                    ?.let { call.respond(it.balance) }
+                    ?: call.respond(HttpStatusCode.NotFound)
             }
 
             post("/transfer") {
-                val username = call.request.headers["username"]
-                require(username.isNullOrEmpty().not()) {
-                    throw IllegalStateException("username must be not null.")
-                }
-
                 val blockRecord = call.receive<BlockRecord>()
-                val w1 = WalletRepository.findByUserName(blockRecord.from)
-                val w2 = WalletRepository.findByUserName(blockRecord.to)
+                val w1 = MongoClient.findByUsername(blockRecord.from)
+                val w2 = MongoClient.findByUsername(blockRecord.to)
 
-                val tx2 = w1.sendFundsTo(recipient = w2.publicKey, amountToSend = blockRecord.sum)
-                Chain.add(blockRecord, tx2)
+                if (w1 != null) {
+                    if (w2 != null) {
+                        val tx2 = w1.sendFundsTo(recipient = w2.publicKey, amountToSend = blockRecord.sum)
+                        Chain.add(blockRecord, tx2)
+                    } else {
+                        throw IllegalStateException("couldn't find 'to wallet'")
+                    }
+                } else {
+                    throw IllegalStateException("couldn't find 'from wallet'")
+                }
 
                 log.info("Chain:${Chain.getChain()}")
                 log.info("Wallet1 balance: ${w1.balance}")

@@ -1,8 +1,8 @@
 import BlockUtils.isMined
 import BlockUtils.isValid
+import UT.updateUTXO
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -12,8 +12,6 @@ object Chain {
     /** nonce */
     private const val DIFFICULTY = 2
     private val validPrefix = "0".repeat(DIFFICULTY)
-    /** transactions */
-    val UTXO: ConcurrentHashMap<String, TransactionOutput> = ConcurrentHashMap()
     /** Own chain list */
     private val chain: CopyOnWriteArrayList<Block> = CopyOnWriteArrayList<Block>()
     private val lock = ReentrantLock()
@@ -78,11 +76,6 @@ object Chain {
         }
         updateUTXO(block)
         return block
-    }
-
-    private fun updateUTXO(block: Block) {
-        block.transactions.flatMap { it.inputs }.map { it.hash }.forEach { UTXO.remove(it) }
-        UTXO.putAll(block.transactions.flatMap { it.outputs }.associateBy { it.hash })
     }
 
 }

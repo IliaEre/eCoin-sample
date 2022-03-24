@@ -2,7 +2,7 @@
 
 Kotlin, Ktor.
 
-# version 0.0.1-SNAPSHOT
+# version 0.0.2-SNAPSHOT
 
 --- 
 
@@ -13,7 +13,6 @@ Kotlin, Ktor.
 ```http request
 POST http://localhost:8080/wallet/transfer
 Content-Type: application/json
-username: testUser
 
 {"platform_name":"platform","date":1535015447,"from":"user1","to":"user2","sum":33}
 ```
@@ -21,5 +20,7 @@ username: testUser
 
 --- 
 > Main threads:
-1. https://kennycason.com/posts/2018-08-25-blockchain-kotlin.html  
-2. https://medium.com/@vasilyf/lets-implement-a-cryptocurrency-in-kotlin-part-1-blockchain-8704069f8580
+1. [blockchain with kotlin](https://kennycason.com/posts/2018-08-25-blockchain-kotlin.html)  
+2. [blockchain with kotlin and wallet](https://medium.com/@vasilyf/lets-implement-a-cryptocurrency-in-kotlin-part-1-blockchain-8704069f8580)   
+3. [kotlinx serialisation](https://litote.org/kmongo/quick-start/#with-kotlinxserialization)  
+4. [Kmongo](https://litote.org/kmongo/quick-start/)

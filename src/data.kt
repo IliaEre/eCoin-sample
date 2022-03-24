@@ -3,21 +3,14 @@ import BlockUtils.hash
 import RsaUtils.encodeToString
 import RsaUtils.sign
 import RsaUtils.verifySignature
-import java.time.Instant
+import WalletUtils.getTransactions
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.PublicKey
+import java.time.Instant
 
-/**
- * Custom data
- * */
-data class BlockRecord(
-    val platformName: String,
-    val date: Long,
-    val from: String,
-    val to: String,
-    val sum: Long
-)
+/** Custom data */
+data class BlockRecord(val platformName: String, val date: Long, val from: String, val to: String, val sum: Long)
 
 data class Block(
     val index: Int = 0,
@@ -25,23 +18,17 @@ data class Block(
     val timestamp: Long = Instant.now().toEpochMilli(),
     val blockRecord: BlockRecord,
     val previousHash: String,
-    val nonce: Long = 0
+    val nonce: Long = 0,
 ) {
     val hash: String = this.calculateHash()
-
-    fun addTransaction(transaction: Transaction): Block {
-        if (transaction.isSignatureValid())
-            transactions.add(transaction)
-        return this
-    }
 }
 
-/**
- * Client wallet
- * */
+/** Client wallet */
 data class Wallet(val publicKey: PublicKey, val privateKey: PrivateKey, val blockChain: Chain) {
 
     companion object {
+
+        @Deprecated("Should remove private key and shouldn't save it")
         fun create(blockChain: Chain): Wallet =
             KeyPairGenerator.getInstance("RSA")
                 .also { it.initialize(2048) }
@@ -51,65 +38,27 @@ data class Wallet(val publicKey: PublicKey, val privateKey: PrivateKey, val bloc
 
     val balance: Long
         get() {
-            return getMyTransactions().sumOf { it.amount }
+            return this.getTransactions().sumOf { it.amount }
         }
-
-    private fun getMyTransactions(): Collection<TransactionOutput> {
-        return blockChain.UTXO.filterValues { it.isMine(publicKey) }.values
-    }
-
-    fun sendFundsTo(recipient: PublicKey, amountToSend: Long): Transaction {
-
-        if (amountToSend > balance) {
-            throw IllegalArgumentException("Insufficient funds")
-        }
-
-        val tx = Transaction.create(sender = publicKey, recipient = publicKey, amount = amountToSend)
-        tx.outputs.add(TransactionOutput(recipient = recipient, amount = amountToSend, transactionHash = tx.hash))
-
-        var collectedAmount = 0L
-        for (myTx in getMyTransactions()) {
-            collectedAmount += myTx.amount
-            tx.inputs.add(myTx)
-
-            if (collectedAmount > amountToSend) {
-                val change = collectedAmount - amountToSend
-                tx.outputs.add(TransactionOutput(recipient = publicKey, amount = change, transactionHash = tx.hash))
-            }
-
-            if (collectedAmount >= amountToSend) {
-                break
-            }
-        }
-        return tx.sign(privateKey)
-    }
 }
 
 data class TransactionOutput(
     val recipient: PublicKey,
     val amount: Long,
     val transactionHash: String,
-    var hash: String = ""
-) {
-
-    init {
-        hash = "${recipient.encodeToString()}$amount$transactionHash".hash()
-    }
-
-    fun isMine(me: PublicKey): Boolean = recipient == me
-}
+    val hash: String = "${recipient.encodeToString()}$amount$transactionHash".hash()
+)
 
 data class Transaction(
     val sender: PublicKey,
     val recipient: PublicKey,
     val amount: Long,
     val inputs: MutableList<TransactionOutput> = mutableListOf(),
-    val outputs: MutableList<TransactionOutput> = mutableListOf()
+    val outputs: MutableList<TransactionOutput> = mutableListOf(),
+    val hash: String = "${sender.encodeToString()}${recipient.encodeToString()}$amount$salt".hash()
 ) {
 
     private var signature: ByteArray = ByteArray(0)
-
-    val hash: String = "${sender.encodeToString()}${recipient.encodeToString()}$amount$salt".hash()
 
     companion object {
         fun create(sender: PublicKey, recipient: PublicKey, amount: Long): Transaction =
@@ -127,8 +76,7 @@ data class Transaction(
         return this
     }
 
-    fun isSignatureValid(): Boolean {
-        return "${sender.encodeToString()}${recipient.encodeToString()}$amount".verifySignature(sender, signature)
-    }
+    fun isSignatureValid(): Boolean =
+        "${sender.encodeToString()}${recipient.encodeToString()}$amount".verifySignature(sender, signature)
 
 }

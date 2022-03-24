@@ -8,5 +8,5 @@ fun Application.module() {
     chainRouting()
     stateRouting()
 
-    Bootstrap().bootstrap()
+    Bootstrap().load()
 }
