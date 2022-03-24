@@ -20,6 +20,7 @@ Content-Type: application/json
 
 --- 
 > Main threads:
-1. https://kennycason.com/posts/2018-08-25-blockchain-kotlin.html  
-2. https://medium.com/@vasilyf/lets-implement-a-cryptocurrency-in-kotlin-part-1-blockchain-8704069f8580  
-3. https://litote.org/kmongo/quick-start/#with-kotlinxserialization  
+1. [blockchain with kotlin](https://kennycason.com/posts/2018-08-25-blockchain-kotlin.html)  
+2. [blockchain with kotlin and wallet](https://medium.com/@vasilyf/lets-implement-a-cryptocurrency-in-kotlin-part-1-blockchain-8704069f8580)   
+3. [kotlinx serialisation](https://litote.org/kmongo/quick-start/#with-kotlinxserialization)  
+4. [Kmongo](https://litote.org/kmongo/quick-start/)
