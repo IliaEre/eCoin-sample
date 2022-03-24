@@ -10,13 +10,7 @@ import java.security.PublicKey
 import java.time.Instant
 
 /** Custom data */
-data class BlockRecord(
-    val platformName: String,
-    val date: Long,
-    val from: String,
-    val to: String,
-    val sum: Long
-)
+data class BlockRecord(val platformName: String, val date: Long, val from: String, val to: String, val sum: Long)
 
 data class Block(
     val index: Int = 0,
@@ -33,6 +27,8 @@ data class Block(
 data class Wallet(val publicKey: PublicKey, val privateKey: PrivateKey, val blockChain: Chain) {
 
     companion object {
+
+        @Deprecated("Should remove private key and shouldn't save it")
         fun create(blockChain: Chain): Wallet =
             KeyPairGenerator.getInstance("RSA")
                 .also { it.initialize(2048) }
