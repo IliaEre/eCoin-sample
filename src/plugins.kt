@@ -47,24 +47,14 @@ fun Application.chainRouting() {
             post("/transfer") {
                 val blockRecord = call.receive<BlockRecord>()
                 val w1 = MongoClient.findByUsername(blockRecord.from)
+                    ?: throw IllegalStateException("couldn't find 'from wallet'")
                 val w2 = MongoClient.findByUsername(blockRecord.to)
+                    ?: throw IllegalStateException("couldn't find 'to wallet'")
 
-                if (w1 != null) {
-                    if (w2 != null) {
-                        val tx2 = w1.sendFundsTo(recipient = w2.publicKey, amountToSend = blockRecord.sum)
-                        Chain.add(blockRecord, tx2)
-                    } else {
-                        throw IllegalStateException("couldn't find 'to wallet'")
-                    }
-                } else {
-                    throw IllegalStateException("couldn't find 'from wallet'")
-                }
+                val tx2 = w1.sendFundsTo(recipient = w2.publicKey, amountToSend = blockRecord.sum)
+                Chain.add(blockRecord, tx2)
 
-                log.info("Chain:${Chain.getChain()}")
-                log.info("Wallet1 balance: ${w1.balance}")
-                log.info("Wallet2 balance: ${w2.balance}")
-
-                call.respond(HttpStatusCode.OK, mapOf("status" to "ok"))
+                call.respond(HttpStatusCode.OK, BalanceResponse("ok", w1.balance, w2.balance))
             }
         }
 

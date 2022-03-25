@@ -12,3 +12,5 @@ data class WalletEntity(
 data class BalanceWalletDto(val username: String, val balance: Long)
 
 data class WalletCreateRequest(val username: String)
+
+data class BalanceResponse(val status: String, val w1: Long, val w2: Long)

@@ -1,4 +1,4 @@
-package repo
+package extra
 
 import Chain
 import Wallet

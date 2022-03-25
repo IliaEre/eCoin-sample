@@ -4,7 +4,7 @@ import RsaUtils.encodeToString
 import org.litote.kmongo.reactivestreams.*
 import org.litote.kmongo.coroutine.*
 import org.litote.kmongo.eq
-import repo.WalletBuilder
+import extra.WalletBuilder
 import java.time.OffsetDateTime
 
 object MongoClient {
